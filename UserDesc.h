@@ -19,9 +19,9 @@
 struct UserDescription {
 
     enum GenderDescription {
-        U, // undefined
-        M, // male
-        F // female
+        U = 'u', // undefined
+        M = 'm', // male
+        F = 'f' // female
     };
 
     const uint64_t Id;

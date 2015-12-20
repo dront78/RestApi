@@ -71,6 +71,12 @@ public:
         }
     }
 
+    void emit(Args... p) const {
+        for (auto it : slots_) {
+            it.second(p...);
+        }
+    }
+
     // assignment creates new Signal
 
     Signal& operator=(Signal const& other) {

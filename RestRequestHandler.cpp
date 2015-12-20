@@ -75,12 +75,24 @@ UserDescriptionSet RestRequestHandler::GetFilterUserList(const UserDescription &
     UserDescriptionSet SetIntersectPhase3;
     std::set_intersection(SetIntersectPhase2.begin(), SetIntersectPhase2.end(), AgeSet.begin(), AgeSet.end(), std::inserter(SetIntersectPhase3, SetIntersectPhase3.begin()));
 
-    return SetIntersectPhase3;
+    UserDescriptionSet _Result;
+    UserDescriptionSet::const_iterator _it(SetIntersectPhase3.begin());
+    while (SetIntersectPhase3.end() != _it) {
+        const UserDescription & Desc(*_it);
+        _Result.insert(*mUserDescriptionSet.find(Desc));
+        ++_it;
+    }
+
+    return _Result;
 }
 
 bool RestRequestHandler::AddUser(const UserDescription & User) {
     const scoped_shared_wlock _lock(mSharedMtx);
     std::pair < UserDescriptionSet::iterator, bool> _R(mUserDescriptionSet.insert(User));
+    mFirstNameMap.insert(NameMap::value_type(User.FirstName, User.Id));
+    mLastNameMap.insert(NameMap::value_type(User.LastName, User.Id));
+    mGenderMap.insert(GenderMap::value_type(User.Gender, User.Id));
+    mAgeMap.insert(AgeMap::value_type(User.Age, User.Id));
     return _R.second;
 }
 
@@ -133,7 +145,7 @@ bool RestRequestHandler::DeleteUser(const UserDescription & Filter) {
     UserDescriptionSet::iterator _it(SetIntersectPhase3.begin());
     while (SetIntersectPhase3.end() != _it) {
         const UserDescription & Desc(*_it);
-        for (NameMap::iterator _it = FirstNameRange.first; _it != FirstNameRange.second; ++_it) {
+        for (NameMap::iterator _it = FirstNameRange.first; _it != FirstNameRange.second;) {
             if ((*_it).second == Desc.Id) {
                 _it = mFirstNameMap.erase(_it);
             } else {

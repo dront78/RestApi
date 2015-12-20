@@ -44,6 +44,7 @@
         <linkerTool>
           <linkerLibItems>
             <linkerLibLibItem>microhttpd</linkerLibLibItem>
+            <linkerLibLibItem>pthread</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -94,6 +95,7 @@
         <linkerTool>
           <linkerLibItems>
             <linkerLibLibItem>microhttpd</linkerLibLibItem>
+            <linkerLibLibItem>pthread</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

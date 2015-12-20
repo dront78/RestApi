@@ -56,7 +56,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-lmicrohttpd
+LDLIBSOPTIONS=-lmicrohttpd -lpthread
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
