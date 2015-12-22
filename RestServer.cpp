@@ -27,9 +27,9 @@ RestServer::~RestServer() {
 }
 
 bool RestServer::Start(uint16_t port) {
-    mHttpHandler->signalGet.connect_member(&RestServer::OnMethodGet, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-    mHttpHandler->signalPut.connect_member(&RestServer::OnMethodPut, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-    mHttpHandler->signalDelete.connect_member(&RestServer::OnMethodDelete, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    mHttpHandler->signalGet.connect_member(&RestServer::OnMethodGet, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
+    mHttpHandler->signalPut.connect_member(&RestServer::OnMethodPut, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
+    mHttpHandler->signalDelete.connect_member(&RestServer::OnMethodDelete, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
     return mHttpHandler->Start(port);
 }
 
@@ -37,7 +37,7 @@ void RestServer::Wait() {
     std::cin.get();
 }
 
-void RestServer::OnMethodGet(const std::string & url, const std::string & method, const std::string & version, std::string & result) {
+void RestServer::OnMethodGet(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback) {
     std::cout << method << ' ' << url << ' ' << version << std::endl;
     const UserDescriptionSet & DescSet(mRestRequestHandler->GetFilterUserList(Parse(url)));
     UserDescriptionSet::const_iterator _it(DescSet.begin());
@@ -50,16 +50,19 @@ void RestServer::OnMethodGet(const std::string & url, const std::string & method
     }
     mGetResponse << "</body></html>" << '\n';
     result = mGetResponse.str();
+    taskCallback.OnTaskFinished();
 }
 
-void RestServer::OnMethodPut(const std::string & url, const std::string & method, const std::string & version, std::string & result) {
+void RestServer::OnMethodPut(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback) {
     std::cout << method << ' ' << url << ' ' << version << std::endl;
     mRestRequestHandler->AddUser(Parse(url, mRestRequestHandler->NextUserId()));
+    taskCallback.OnTaskFinished();
 }
 
-void RestServer::OnMethodDelete(const std::string & url, const std::string & method, const std::string & version, std::string & result) {
+void RestServer::OnMethodDelete(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback) {
     std::cout << method << ' ' << url << ' ' << version << std::endl;
     mRestRequestHandler->DeleteUser(Parse(url));
+    taskCallback.OnTaskFinished();
 }
 
 UserDescription RestServer::Parse(const std::string & url, uint64_t id) {

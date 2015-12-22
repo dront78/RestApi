@@ -16,27 +16,31 @@
 
 #include <microhttpd.h>
 #include <stdint.h>
+#include <atomic>
 #include "SignalSlot.h"
+#include "WasteHandler.h"
 
-class MicroHttpdHandler {
+class MicroHttpdHandler : private WasteHandler {
 public:
     MicroHttpdHandler();
     virtual ~MicroHttpdHandler();
     bool Start(uint16_t port);
     void Stop();
     bool IsValid() const;
-    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */> signalGet;
-    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */> signalPut;
-    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */> signalDelete;
+    void OnTaskFinished();
+    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */, WasteHandler & /* taskCallback */> signalGet;
+    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */, WasteHandler & /* taskCallback */> signalPut;
+    Signal<const std::string & /* url */, const std::string & /* method */, const std::string & /* version */, std::string & /* result */, WasteHandler & /* taskCallback */> signalDelete;
 
 
 private:
     MicroHttpdHandler(const MicroHttpdHandler & orig);
     MHD_Daemon * m_Daemon;
+    std::atomic<int> m_WasteLoad;
     static thread_local char * mUriBuffer;
-    std::string TaskGet(const std::string url, const std::string method, const std::string version) const;
-    std::string TaskPut(const std::string url, const std::string method, const std::string version) const;
-    std::string TaskDelete(const std::string url, const std::string method, const std::string version) const;
+    std::string TaskGet(const std::string url, const std::string method, const std::string version);
+    std::string TaskPut(const std::string url, const std::string method, const std::string version);
+    std::string TaskDelete(const std::string url, const std::string method, const std::string version);
     enum {
         URI_BUFFER_SIZE = 255,
         TASK_WAIT_GET = 100,
@@ -44,7 +48,8 @@ private:
         TASK_WAIT_DELETE = 1000,
         CONNECTION_LIMIT = 100,
         CONNECTION_TIMEOUT = 4000,
-        THREAD_POOL_SIZE = 4
+        THREAD_POOL_SIZE = 4,
+        WASTELOAD = 1000
     };
 
     static int My_MHD_AccessHandlerCallback(void *cls,

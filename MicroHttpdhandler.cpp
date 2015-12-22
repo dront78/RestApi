@@ -28,7 +28,7 @@ const size_t MicroHttpdHandler::RESPONSE_ERROR_LEN(43);
 
 thread_local char * MicroHttpdHandler::mUriBuffer;
 
-MicroHttpdHandler::MicroHttpdHandler() : m_Daemon(0) {
+MicroHttpdHandler::MicroHttpdHandler() : m_Daemon(0), m_WasteLoad(0) {
 }
 
 MicroHttpdHandler::MicroHttpdHandler(const MicroHttpdHandler& /* orig */) {
@@ -60,28 +60,32 @@ bool MicroHttpdHandler::IsValid() const {
     return (0 != m_Daemon);
 }
 
-std::string MicroHttpdHandler::TaskGet(const std::string url, const std::string method, const std::string version) const {
+void MicroHttpdHandler::OnTaskFinished() {
+    --m_WasteLoad;
+}
+
+std::string MicroHttpdHandler::TaskGet(const std::string url, const std::string method, const std::string version) {
     std::string _Result;
-    signalGet.emit(url, method, version, _Result);
+    signalGet.emit(url, method, version, _Result, *this);
     return _Result;
 }
 
-std::string MicroHttpdHandler::TaskPut(const std::string url, const std::string method, const std::string version) const {
+std::string MicroHttpdHandler::TaskPut(const std::string url, const std::string method, const std::string version) {
     std::string _Result;
-    signalPut.emit(url, method, version, _Result);
+    signalPut.emit(url, method, version, _Result, *this);
     return _Result;
 }
 
-std::string MicroHttpdHandler::TaskDelete(const std::string url, const std::string method, const std::string version) const {
+std::string MicroHttpdHandler::TaskDelete(const std::string url, const std::string method, const std::string version) {
     std::string _Result;
-    signalDelete.emit(url, method, version, _Result);
+    signalDelete.emit(url, method, version, _Result, *this);
     return _Result;
 }
 
 int MicroHttpdHandler::My_MHD_AccessHandlerCallback(void *cls, struct MHD_Connection *connection,
         const char *url, const char *method, const char *version, const char * /* upload_data */,
         size_t * /* upload_data_size */, void ** /* con_cls */) {
-    std::cout << "My_MHD_AccessHandlerCallback " << std::this_thread::get_id() << std::endl;
+    // std::cout << "My_MHD_AccessHandlerCallback " << std::this_thread::get_id() << std::endl;
     MicroHttpdHandler * Handler(static_cast<MicroHttpdHandler *> (cls));
     int code(MHD_HTTP_OK);
     const std::string page = Handler->Handle(url, method, version, code);
@@ -94,7 +98,7 @@ int MicroHttpdHandler::My_MHD_AccessHandlerCallback(void *cls, struct MHD_Connec
 
 void * MicroHttpdHandler::My_URI_LoggerCallback(void* cls, const char* uri) {
     MicroHttpdHandler * Handler(static_cast<MicroHttpdHandler *> (cls));
-    std::cout << "My_URI_LoggerCallback " << std::this_thread::get_id() << std::endl;
+    // std::cout << "My_URI_LoggerCallback " << std::this_thread::get_id() << std::endl;
     static thread_local char * myUri(0);
     if (0 == myUri) {
         myUri = mUriBuffer = new char [URI_BUFFER_SIZE + 1];
@@ -111,9 +115,12 @@ void * MicroHttpdHandler::My_URI_LoggerCallback(void* cls, const char* uri) {
 std::string MicroHttpdHandler::Handle(const char *url, const char *method, const char *version, int & ret) {
     if (!method || !*method || !url || !*url) {
         ret = MHD_HTTP_BAD_REQUEST;
+    } else if (m_WasteLoad > WASTELOAD) {
+        ret = MHD_HTTP_SERVICE_UNAVAILABLE;
     } else if (0 == strncmp(METHOD_GET, method, METHOD_GET_LEN)) {
         std::string SaveUri(mUriBuffer);
         std::future<std::string> FutureTask = std::async(std::launch::async, &MicroHttpdHandler::TaskGet, this, SaveUri, std::string(method), std::string(version));
+        ++m_WasteLoad;
         if (std::future_status::ready == FutureTask.wait_for(std::chrono::milliseconds(TASK_WAIT_GET))) {
             return FutureTask.get();
         } else {
@@ -122,6 +129,7 @@ std::string MicroHttpdHandler::Handle(const char *url, const char *method, const
     } else if (0 == strncmp(METHOD_PUT, method, METHOD_PUT_LEN)) {
         std::string SaveUri(mUriBuffer);
         std::future<std::string> FutureTask = std::async(std::launch::async, &MicroHttpdHandler::TaskPut, this, SaveUri, std::string(method), std::string(version));
+        ++m_WasteLoad;
         if (std::future_status::ready == FutureTask.wait_for(std::chrono::milliseconds(TASK_WAIT_PUT))) {
             return FutureTask.get();
         } else {
@@ -130,6 +138,7 @@ std::string MicroHttpdHandler::Handle(const char *url, const char *method, const
     } else if (0 == strncmp(METHOD_DELETE, method, METHOD_DELETE_LEN)) {
         std::string SaveUri(mUriBuffer);
         std::future<std::string> FutureTask = std::async(std::launch::async, &MicroHttpdHandler::TaskDelete, this, SaveUri, std::string(method), std::string(version));
+        ++m_WasteLoad;
         if (std::future_status::ready == FutureTask.wait_for(std::chrono::milliseconds(TASK_WAIT_DELETE))) {
             return FutureTask.get();
         } else {

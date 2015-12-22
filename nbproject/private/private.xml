@@ -9,7 +9,6 @@
         <group>
             <file>file:/home/dront/Develop/TestDep/RestApi/SignalSlot.h</file>
             <file>file:/home/dront/Develop/TestDep/RestApi/main.cpp</file>
-            <file>file:/home/dront/Develop/TestDep/RestApi/MicroHttpdhandler.h</file>
             <file>file:/home/dront/Develop/TestDep/RestApi/MicroHttpdhandler.cpp</file>
         </group>
     </open-files>

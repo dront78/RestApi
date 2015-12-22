@@ -19,6 +19,7 @@
 #include <iostream>
 #include "MicroHttpdHandler.h"
 #include "RestRequestHandler.h"
+#include "WasteHandler.h"
 
 class RestServer {
 public:
@@ -27,9 +28,9 @@ public:
     bool Start(uint16_t port);
     void Wait();
 private:
-    void OnMethodGet(const std::string & url, const std::string & method, const std::string & version, std::string & result);
-    void OnMethodPut(const std::string & url, const std::string & method, const std::string & version, std::string & result);
-    void OnMethodDelete(const std::string & url, const std::string & method, const std::string & version, std::string & result);
+    void OnMethodGet(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback);
+    void OnMethodPut(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback);
+    void OnMethodDelete(const std::string & url, const std::string & method, const std::string & version, std::string & result, WasteHandler & taskCallback);
     UserDescription Parse(const std::string & url, uint64_t id = 0);
     bool ValidateUrl(const std::string & url) const;
     std::string GetFirstName(const std::string & url) const;
